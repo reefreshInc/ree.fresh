@@ -894,7 +894,7 @@ body.mobile-nav-active #mobile-nav-toggle {
   padding: 30px 0 0 0;
 }
 #team .row{
-  justify-content: center;
+  justify-content: space-evenly;
 }
 
 #team .member {
