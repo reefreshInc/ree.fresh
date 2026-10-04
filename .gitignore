@@ -1,0 +1,12 @@
+# Build / deployment output
+dist/
+
+# Python / Django
+__pycache__/
+*.py[cod]
+*$py.class
+*.sqlite3
+
+# OS files
+.DS_Store
+Thumbs.db
