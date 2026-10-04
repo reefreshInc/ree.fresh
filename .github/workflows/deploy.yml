@@ -1,0 +1,65 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Build static site
+        run: |
+          python3 -c "
+          import re, os, shutil
+          dist_dir = 'dist'
+          if os.path.exists(dist_dir):
+              shutil.rmtree(dist_dir)
+          os.makedirs(dist_dir, exist_ok=True)
+          shutil.copytree('mainapp/static/mainapp', os.path.join(dist_dir, 'mainapp'))
+          os.makedirs(os.path.join(dist_dir, 'static'), exist_ok=True)
+          shutil.copytree('mainapp/static/mainapp', os.path.join(dist_dir, 'static', 'mainapp'))
+          with open('mainapp/templates/Home.html', 'r', encoding='utf-8') as f:
+              content = f.read()
+          content = re.sub(r'\{%\s*load\s+static\s*%\}', '', content)
+          content = re.sub(r'url\(\s*\{%\s*static\s*[\'\"](.*?)[\'\"]\s*%\}\s*\)', r\"url('\1')\", content)
+          content = re.sub(r'(\b(?:href|src)=)\{%\s*static\s*[\'\"](.*?)[\'\"]\s*%\}', r'\1\"\2\"', content)
+          content = re.sub(r'\{%\s*static\s*[\'\"](.*?)[\'\"]\s*%\}', r'\1', content)
+          with open(os.path.join(dist_dir, 'index.html'), 'w', encoding='utf-8') as f:
+              f.write(content.strip() + '\n')
+          with open(os.path.join(dist_dir, '.nojekyll'), 'w') as f:
+              f.write('')
+          "
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './dist'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
